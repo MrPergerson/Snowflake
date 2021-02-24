@@ -2,6 +2,9 @@ import * as THREE from './threejs/build/three.module.js';
 import Stats from './threejs/jsm/libs/stats.module.js';
 import { GUI } from './threejs/jsm/libs/dat.gui.module.js';
 import { TrackballControls } from './threejs/jsm/controls/TrackballControls.js';
+import { GLTFLoader } from './threejs/jsm/loaders/GLTFLoader.js';
+import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
+//import { RoughnessMipmapper } from './threejs/jsm/utils/RoughnessMipmapper.js';
 
 let perspectiveCamera, orthographicCamera, controls, scene, renderer, stats;
 
@@ -27,23 +30,53 @@ function init() {
 	// world
 
 	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0xcccccc );
+	//scene.background = new THREE.Color( 0xcccccc );
+
+	new RGBELoader()
+		.setDataType( THREE.UnsignedByteType )
+		.setPath( '../assets/hdr/' )
+		.load( 'snowy_park_01_blurred_4k.hdr', function ( texture ) {
+
+			const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
+
+			scene.background = envMap;
+			scene.environment = envMap;
+
+			texture.dispose();
+			pmremGenerator.dispose();
+
+			render();
+
+			// use of RoughnessMipmapper is optional
+			//const roughnessMipmapper = new RoughnessMipmapper( renderer );
+
+			const loader = new GLTFLoader().setPath( '../assets/models/' );
+			loader.load( 'snowflake.gltf', function ( gltf ) {
+
+				gltf.scene.traverse( function ( child ) {
+
+					if ( child.isMesh ) {
+
+						// TOFIX RoughnessMipmapper seems to be broken with WebGL 2.0
+						// roughnessMipmapper.generateMipmaps( child.material );
+
+					}
+
+				} );
+
+				scene.add( gltf.scene );
+
+				//roughnessMipmapper.dispose();
+
+				render();
+
+			} );
+
+		} );
+
 	scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
-	const geometry = new THREE.CylinderGeometry( 0, 10, 30, 4, 1 );
-	const material = new THREE.MeshPhongMaterial( { color: 0xffffff, flatShading: true } );
-
-	for ( let i = 0; i < 500; i ++ ) {
-
-		const mesh = new THREE.Mesh( geometry, material );
-		mesh.position.x = ( Math.random() - 0.5 ) * 1000;
-		mesh.position.y = ( Math.random() - 0.5 ) * 1000;
-		mesh.position.z = ( Math.random() - 0.5 ) * 1000;
-		mesh.updateMatrix();
-		mesh.matrixAutoUpdate = false;
-		scene.add( mesh );
-
-	}
+	
 
 	// lights
 
@@ -63,7 +96,13 @@ function init() {
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.toneMapping = THREE.ACESFilmicToneMapping;
+	renderer.toneMappingExposure = 1;
+	renderer.outputEncoding = THREE.sRGBEncoding;
 	document.body.appendChild( renderer.domElement );
+
+	const pmremGenerator = new THREE.PMREMGenerator( renderer );
+	pmremGenerator.compileEquirectangularShader();
 
 	stats = new Stats();
 	document.body.appendChild( stats.dom );
