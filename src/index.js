@@ -35,7 +35,7 @@ function init() {
 	new RGBELoader()
 		.setDataType( THREE.UnsignedByteType )
 		.setPath( '../assets/hdr/' )
-		.load( 'snowy_park_01_blurred_4k.hdr', function ( texture ) {
+		.load( 'snowy_park_01_blurred_2k.hdr', function ( texture ) {
 
 			const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
 
