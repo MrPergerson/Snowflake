@@ -35,7 +35,7 @@ function init() {
 	new RGBELoader()
 		.setDataType( THREE.UnsignedByteType )
 		.setPath( '../assets/hdr/' )
-		.load( 'snowy_park_01_1k.hdr', function ( texture ) {
+		.load( 'snowy_park_01_blurred_1k.hdr', function ( texture ) {
 
 			const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
 
@@ -51,18 +51,15 @@ function init() {
 			//const roughnessMipmapper = new RoughnessMipmapper( renderer );
 
 			const loader = new GLTFLoader().setPath( '../assets/models/' );
-			loader.load( 'snowflake.gltf', function ( gltf ) {
+			loader.load('snowflake.gltf', function ( gltf ) {
 
-				gltf.scene.traverse( function ( child ) {
-
-					if ( child.isMesh ) {
-
-						// TOFIX RoughnessMipmapper seems to be broken with WebGL 2.0
-						// roughnessMipmapper.generateMipmaps( child.material );
-
-					}
-
-				} );
+				var mesh = gltf.scene.children[0];
+				var material = new THREE.MeshStandardMaterial({
+					color: 0x2194ce,
+					transparent: true,
+					opacity: 0.8
+				});
+				mesh.material = material;
 
 				scene.add( gltf.scene );
 
