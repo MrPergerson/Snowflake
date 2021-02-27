@@ -32,7 +32,7 @@ function init() {
 
 	new RGBELoader()
 		.setDataType( THREE.UnsignedByteType )
-		.setPath( '../assets/hdr/' )
+		.setPath( './assets/hdr/' )
 		.load( 'snowy_park_01_blurred_1k.hdr', function ( texture ) {
 
 			const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
@@ -52,7 +52,7 @@ function init() {
 
 		} );
 
-	const loader = new GLTFLoader().setPath( '../assets/models/' );
+	const loader = new GLTFLoader().setPath( './assets/models/' );
 	loader.load('snowflake.gltf', function ( gltf ) {
 		var mesh = gltf.scene.children[0];
 		var material = new THREE.MeshStandardMaterial({
