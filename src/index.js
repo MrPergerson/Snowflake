@@ -7,11 +7,13 @@ import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
 //import { RoughnessMipmapper } from './threejs/jsm/utils/RoughnessMipmapper.js';
 
 let perspectiveCamera, controls, scene, renderer, stats;
-let showBackground;
 
-const params = {
-	showBackground: true
-};
+let snowFlakeMaterial = new THREE.MeshStandardMaterial({
+	color: 0x2194ce,
+	transparent: true,
+	opacity: 0.8,
+	roughness: 0
+});
 
 const frustumSize = 400;
 
@@ -55,12 +57,7 @@ function init() {
 	const loader = new GLTFLoader().setPath( './assets/models/' );
 	loader.load('snowflake.gltf', function ( gltf ) {
 		var mesh = gltf.scene.children[0];
-		var material = new THREE.MeshStandardMaterial({
-			color: 0x2194ce,
-			transparent: true,
-			opacity: 0.8
-		});
-		mesh.material = material;
+		mesh.material = snowFlakeMaterial;
 
 		scene.add( gltf.scene );
 
@@ -100,19 +97,36 @@ function init() {
 	const pmremGenerator = new THREE.PMREMGenerator( renderer );
 	pmremGenerator.compileEquirectangularShader();
 
+	setUpDebugGUI();
+
+	window.addEventListener( 'resize', onWindowResize );
+
+	createControls( perspectiveCamera );
+
+}
+
+function setUpDebugGUI()
+{
 	stats = new Stats();
 	document.body.appendChild( stats.dom );
 
 	//
 
-	const gui = new GUI();
-	gui.add(params, 'showBackground').name( 'Show background' );
+	const gui = new GUI( { width: 300 } );
 
-	//
+	const folderSFMat = gui.addFolder( 'Snowflake Material' );
+	folderSFMat.add(snowFlakeMaterial, 'transparent').name( 'Transparent' );
+	folderSFMat.add(snowFlakeMaterial, 'opacity', 0, 1).name( 'Opacity' );
+	folderSFMat.add(snowFlakeMaterial, 'roughness', 0, 1).name( 'Roughness' );
 
-	window.addEventListener( 'resize', onWindowResize );
+	/*
+	folderSFMat.add( snowFlakeMaterial, 'spline', Object.keys( splines ) ).onChange( function () {
 
-	createControls( perspectiveCamera );
+		addTube();
+
+	} );
+	*/
+
 
 }
 
@@ -135,12 +149,6 @@ function onWindowResize() {
 	perspectiveCamera.aspect = aspect;
 	perspectiveCamera.updateProjectionMatrix();
 
-	orthographicCamera.left = - frustumSize * aspect / 2;
-	orthographicCamera.right = frustumSize * aspect / 2;
-	orthographicCamera.top = frustumSize / 2;
-	orthographicCamera.bottom = - frustumSize / 2;
-	orthographicCamera.updateProjectionMatrix();
-
 	renderer.setSize( window.innerWidth, window.innerHeight );
 
 	controls.handleResize();
@@ -161,7 +169,7 @@ function animate() {
 
 function render() {
 
-	const camera = ( params.orthographicCamera ) ? orthographicCamera : perspectiveCamera;
+	const camera = perspectiveCamera;
 
 	renderer.render( scene, camera );
 
