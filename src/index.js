@@ -6,10 +6,11 @@ import { GLTFLoader } from './threejs/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
 //import { RoughnessMipmapper } from './threejs/jsm/utils/RoughnessMipmapper.js';
 
-let perspectiveCamera, orthographicCamera, controls, scene, renderer, stats;
+let perspectiveCamera, controls, scene, renderer, stats;
+let showBackground;
 
 const params = {
-	orthographicCamera: false
+	showBackground: true
 };
 
 const frustumSize = 400;
@@ -24,14 +25,13 @@ function init() {
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
 	perspectiveCamera.position.z = 500;
 
-	orthographicCamera = new THREE.OrthographicCamera( frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 1, 1000 );
-	orthographicCamera.position.z = 500;
-
 	// world
 
 	scene = new THREE.Scene();
 	//scene.background = new THREE.Color( 0xcccccc );
 
+
+	/*
 	new RGBELoader()
 		.setDataType( THREE.UnsignedByteType )
 		.setPath( '../assets/hdr/' )
@@ -50,24 +50,26 @@ function init() {
 			// use of RoughnessMipmapper is optional
 			//const roughnessMipmapper = new RoughnessMipmapper( renderer );
 
-			const loader = new GLTFLoader().setPath( '../assets/models/' );
-			loader.load('snowflake.gltf', function ( gltf ) {
+			
 
-				var mesh = gltf.scene.children[0];
-				var material = new THREE.MeshStandardMaterial({
-					color: 0x2194ce,
-					transparent: true,
-					opacity: 0.8
-				});
-				mesh.material = material;
+		} );
+	*/
 
-				scene.add( gltf.scene );
+	const loader = new GLTFLoader().setPath( '../assets/models/' );
+	loader.load('snowflake.gltf', function ( gltf ) {
+		var mesh = gltf.scene.children[0];
+		var material = new THREE.MeshStandardMaterial({
+			color: 0x2194ce,
+			transparent: true,
+			opacity: 0.8
+		});
+		mesh.material = material;
 
-				//roughnessMipmapper.dispose();
+		scene.add( gltf.scene );
 
-				render();
+		//roughnessMipmapper.dispose();
 
-			} );
+		render();
 
 		} );
 
@@ -107,13 +109,7 @@ function init() {
 	//
 
 	const gui = new GUI();
-	gui.add( params, 'orthographicCamera' ).name( 'use orthographic' ).onChange( function ( value ) {
-
-		controls.dispose();
-
-		createControls( value ? orthographicCamera : perspectiveCamera );
-
-	} );
+	gui.add(params, 'showBackground').name( 'Show background' );
 
 	//
 
