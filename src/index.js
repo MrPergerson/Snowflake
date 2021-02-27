@@ -30,8 +30,6 @@ function init() {
 	scene = new THREE.Scene();
 	//scene.background = new THREE.Color( 0xcccccc );
 
-
-	/*
 	new RGBELoader()
 		.setDataType( THREE.UnsignedByteType )
 		.setPath( '../assets/hdr/' )
@@ -53,7 +51,6 @@ function init() {
 			
 
 		} );
-	*/
 
 	const loader = new GLTFLoader().setPath( '../assets/models/' );
 	loader.load('snowflake.gltf', function ( gltf ) {
