@@ -7,14 +7,14 @@ import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
 //import { RoughnessMipmapper } from './threejs/jsm/utils/RoughnessMipmapper.js';
 
 let perspectiveCamera, controls, scene, renderer, stats;
-
-let snowFlakeMaterial = new THREE.MeshStandardMaterial({
-	color: 0x2194ce,
+let snowFlakeMaterial;
+const params = {
 	transparent: true,
-	opacity: 0.8,
-	roughness: 0
-});
-
+	transmission: .5,
+	opacity: 1,
+	roughness: 0,
+	exposure: 1
+};  
 const frustumSize = 400;
 
 init();
@@ -50,22 +50,21 @@ function init() {
 			// use of RoughnessMipmapper is optional
 			//const roughnessMipmapper = new RoughnessMipmapper( renderer );
 
+			snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
+				refractionRatio: 0.98,
+				envMap: envMap,
+				transparent: params.transparent,
+				transmission: params.transmission,
+				opacity: params.opacity,
+				roughness: params.roughness
+			});
+		
+			loadSnowFlake();
 			
 
 		} );
 
-	const loader = new GLTFLoader().setPath( './assets/models/' );
-	loader.load('snowflake.gltf', function ( gltf ) {
-		var mesh = gltf.scene.children[0];
-		mesh.material = snowFlakeMaterial;
 
-		scene.add( gltf.scene );
-
-		//roughnessMipmapper.dispose();
-
-		render();
-
-		} );
 
 	scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
 
@@ -105,6 +104,32 @@ function init() {
 
 }
 
+function loadSnowFlake()
+{
+	const loader = new GLTFLoader().setPath( './assets/models/snowflake/' );
+	loader.load('snowflake_highquality.gltf', function ( gltf ) {
+
+		const loader = new THREE.TextureLoader()
+							.setPath( './assets/textures/' );
+
+
+		var mesh = gltf.scene.children[0];
+		mesh.material = snowFlakeMaterial;
+
+		const diffuseMap = loader.load( 'snowflake_tex_diffuse.jpg' );
+		diffuseMap.encoding = THREE.sRGBEncoding;
+		snowFlakeMaterial.map = diffuseMap;
+		snowFlakeMaterial.normalMap = loader.load( 'snowflake_tex_normal.png' );
+
+		scene.add( gltf.scene );
+
+		//roughnessMipmapper.dispose();
+
+		render();
+
+		} );
+}
+
 function setUpDebugGUI()
 {
 	stats = new Stats();
@@ -115,9 +140,10 @@ function setUpDebugGUI()
 	const gui = new GUI( { width: 300 } );
 
 	const folderSFMat = gui.addFolder( 'Snowflake Material' );
-	folderSFMat.add(snowFlakeMaterial, 'transparent').name( 'Transparent' );
-	folderSFMat.add(snowFlakeMaterial, 'opacity', 0, 1).name( 'Opacity' );
-	folderSFMat.add(snowFlakeMaterial, 'roughness', 0, 1).name( 'Roughness' );
+	folderSFMat.add(params, 'transparent').name( 'Transparent' );
+	folderSFMat.add(params, 'transmission', 0, 1).name( 'Transmission' );
+	folderSFMat.add(params, 'opacity', 0, 1).name( 'Opacity' );
+	folderSFMat.add(params, 'roughness', 0, 1).name( 'Roughness' );
 
 	/*
 	folderSFMat.add( snowFlakeMaterial, 'spline', Object.keys( splines ) ).onChange( function () {
