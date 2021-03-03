@@ -1,0 +1,22 @@
+body 
+{ 
+    margin: 0; 
+}
+
+#arrow-left
+{
+    position: absolute;
+    bottom: 50vh;
+    left: 0;
+    margin: 10px;
+    z-index: 2;
+}
+
+#arrow-right
+{
+    position: absolute;
+    bottom: 50vh;
+    right: 0;
+    margin: 10px;
+    z-index: 2;
+}

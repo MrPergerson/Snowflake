@@ -5,10 +5,16 @@ import { TrackballControls } from './threejs/jsm/controls/TrackballControls.js';
 import { GLTFLoader } from './threejs/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
 //import { RoughnessMipmapper } from './threejs/jsm/utils/RoughnessMipmapper.js';
-import { BasisTextureLoader } from './threejs/jsm/loaders/BasisTextureLoader.js';
 
 let perspectiveCamera, controls, scene, renderer, stats;
 let snowFlakeMaterial;
+const params = {
+	transparent: true,
+	transmission: .5,
+	opacity: 1,
+	roughness: 0,
+	exposure: 1
+};  
 const frustumSize = 400;
 
 init();
@@ -19,7 +25,8 @@ function init() {
 	const aspect = window.innerWidth / window.innerHeight;
 
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
-	perspectiveCamera.position.z = 50;
+	perspectiveCamera.position.z = 10;
+
 	// world
 
 	scene = new THREE.Scene();
@@ -43,7 +50,6 @@ function init() {
 			// use of RoughnessMipmapper is optional
 			//const roughnessMipmapper = new RoughnessMipmapper( renderer );
 
-            /*
 			snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
 				refractionRatio: 0.98,
 				envMap: envMap,
@@ -52,16 +58,9 @@ function init() {
 				opacity: params.opacity,
 				roughness: params.roughness
 			});
-            */
-
-            
-            for ( let i = 0; i < 200; i ++ ) {
-
-                loadSnowFlakeImage();
-
-            }		
-            
-            
+		
+			loadSnowFlake();
+			
 
 		} );
 
@@ -97,61 +96,65 @@ function init() {
 	const pmremGenerator = new THREE.PMREMGenerator( renderer );
 	pmremGenerator.compileEquirectangularShader();
 
+	setUpDebugGUI();
+
 	window.addEventListener( 'resize', onWindowResize );
 
 	createControls( perspectiveCamera );
 
 }
 
-function loadSnowFlakeImage()
+function loadSnowFlake()
 {
-    const geometry = flipY( new THREE.PlaneBufferGeometry() );
-    const material = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide } );
+	const loader = new GLTFLoader().setPath( './assets/models/snowflake/' );
+	loader.load('snowflake_highquality.gltf', function ( gltf ) {
 
-    var mesh = new THREE.Mesh( geometry, material );
+		const loader = new THREE.TextureLoader()
+							.setPath( './assets/textures/' );
 
-    scene.add( mesh );
 
-    const loader = new THREE.TextureLoader();
-    loader.load( './assets/images/snowflake/snowflake.png', function ( texture ) {
+		var mesh = gltf.scene.children[0];
+		mesh.material = snowFlakeMaterial;
 
-        material.map = texture;
-        /*
-        loader.load('./assets/images/snowflake/snowflake_alpha.png', function (alphamap) {
-            material.alphaMap = alphamap;
-        });
-        */ 
-        material.needsUpdate = true;
+		const diffuseMap = loader.load( 'snowflake_tex_diffuse.jpg' );
+		diffuseMap.encoding = THREE.sRGBEncoding;
+		snowFlakeMaterial.map = diffuseMap;
+		snowFlakeMaterial.normalMap = loader.load( 'snowflake_tex_normal.png' );
 
-        mesh.position.x = Math.random() * 100 - 50;
-        mesh.position.y = Math.random() * 100 - 50;
-        mesh.position.z = Math.random() * 20 - 10;
+		scene.add( gltf.scene );
 
-        render();
+		//roughnessMipmapper.dispose();
 
-    }, undefined, function ( error ) {
+		render();
 
-        console.error( error );
-
-    } );
-
+		} );
 }
 
-/** Correct UVs to be compatible with `flipY=false` textures. */
-function flipY( geometry ) {
+function setUpDebugGUI()
+{
+	stats = new Stats();
+	document.body.appendChild( stats.dom );
 
-    const uv = geometry.attributes.uv;
+	//
 
-    for ( let i = 0; i < uv.count; i ++ ) {
+	const gui = new GUI( { width: 300 } );
 
-        uv.setY( i, 1 - uv.getY( i ) );
+	const folderSFMat = gui.addFolder( 'Snowflake Material' );
+	folderSFMat.add(params, 'transparent').name( 'Transparent' );
+	folderSFMat.add(params, 'transmission', 0, 1).name( 'Transmission' );
+	folderSFMat.add(params, 'opacity', 0, 1).name( 'Opacity' );
+	folderSFMat.add(params, 'roughness', 0, 1).name( 'Roughness' );
 
-    }
+	/*
+	folderSFMat.add( snowFlakeMaterial, 'spline', Object.keys( splines ) ).onChange( function () {
 
-    return geometry;
+		addTube();
+
+	} );
+	*/
+
 
 }
-
 
 function createControls( camera ) {
 
@@ -164,7 +167,6 @@ function createControls( camera ) {
 	controls.keys = [ 65, 83, 68 ];
 
 }
-
 
 function onWindowResize() {
 
@@ -184,6 +186,8 @@ function animate() {
 	requestAnimationFrame( animate );
 
 	controls.update();
+
+	stats.update();
 
 	render();
 
