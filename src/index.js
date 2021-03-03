@@ -20,6 +20,20 @@ function init() {
 
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
 	perspectiveCamera.position.z = 50;
+
+	// renderer
+
+	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.toneMapping = THREE.ACESFilmicToneMapping;
+	renderer.toneMappingExposure = 1;
+	renderer.outputEncoding = THREE.sRGBEncoding;
+	document.body.appendChild( renderer.domElement );
+
+	const pmremGenerator = new THREE.PMREMGenerator( renderer );
+	pmremGenerator.compileEquirectangularShader();
+
 	// world
 
 	scene = new THREE.Scene();
@@ -53,87 +67,42 @@ function init() {
 				roughness: params.roughness
 			});
             */
+	});
 
-            
-            for ( let i = 0; i < 200; i ++ ) {
+	for ( let i = 0; i < 100; i ++ ) {
 
-                loadSnowFlakeImage();
+		loadSnowFlakeImage();
 
-            }		
-            
-            
-
-		} );
-
-
-
-	scene.fog = new THREE.FogExp2( 0xcccccc, 0.002 );
-
-	
-
-	// lights
-
-	const dirLight1 = new THREE.DirectionalLight( 0xffffff );
-	dirLight1.position.set( 1, 1, 1 );
-	scene.add( dirLight1 );
-
-	const dirLight2 = new THREE.DirectionalLight( 0x002288 );
-	dirLight2.position.set( - 1, - 1, - 1 );
-	scene.add( dirLight2 );
-
-	const ambientLight = new THREE.AmbientLight( 0x222222 );
-	scene.add( ambientLight );
-
-	// renderer
-
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setPixelRatio( window.devicePixelRatio );
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	renderer.toneMapping = THREE.ACESFilmicToneMapping;
-	renderer.toneMappingExposure = 1;
-	renderer.outputEncoding = THREE.sRGBEncoding;
-	document.body.appendChild( renderer.domElement );
-
-	const pmremGenerator = new THREE.PMREMGenerator( renderer );
-	pmremGenerator.compileEquirectangularShader();
+	}		
 
 	window.addEventListener( 'resize', onWindowResize );
 
 	createControls( perspectiveCamera );
 
+	render();
+
 }
 
 function loadSnowFlakeImage()
 {
-    const geometry = flipY( new THREE.PlaneBufferGeometry() );
-    const material = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide } );
+    var texture = new THREE.TextureLoader().load( './assets/images/snowflake/snowflake2.png');
+    var geometry = flipY( new THREE.PlaneBufferGeometry() );
+	var material = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, map: texture } );
+	
+	var mesh = new THREE.Mesh( geometry, material );
 
-    var mesh = new THREE.Mesh( geometry, material );
-
-    scene.add( mesh );
-
-    const loader = new THREE.TextureLoader();
-    loader.load( './assets/images/snowflake/snowflake.png', function ( texture ) {
-
-        material.map = texture;
         /*
         loader.load('./assets/images/snowflake/snowflake_alpha.png', function (alphamap) {
             material.alphaMap = alphamap;
         });
         */ 
-        material.needsUpdate = true;
+        //material.needsUpdate = true;
 
-        mesh.position.x = Math.random() * 100 - 50;
-        mesh.position.y = Math.random() * 100 - 50;
-        mesh.position.z = Math.random() * 20 - 10;
+	mesh.position.x = Math.random() * 100 - 50;
+	mesh.position.y = Math.random() * 100 - 50;
+	mesh.position.z = Math.random() * 20 - 10;
 
-        render();
-
-    }, undefined, function ( error ) {
-
-        console.error( error );
-
-    } );
+	scene.add( mesh );
 
 }
 
