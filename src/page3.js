@@ -17,6 +17,7 @@ const params = {
 };  
 const frustumSize = 400;
 
+
 init();
 animate();
 
@@ -110,7 +111,7 @@ function loadSnowFlake()
 	loader.load('snowflake_highquality.gltf', function ( gltf ) {
 
 		const loader = new THREE.TextureLoader()
-							.setPath( './assets/textures/' );
+							.setPath( './assets/textures/snowflake/' );
 
 
 		var mesh = gltf.scene.children[0];

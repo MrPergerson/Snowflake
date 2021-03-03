@@ -10,6 +10,7 @@ import { BasisTextureLoader } from './threejs/jsm/loaders/BasisTextureLoader.js'
 let perspectiveCamera, controls, scene, renderer, stats;
 let snowFlakeMaterial;
 const frustumSize = 400;
+let snowflakes = new Array();
 
 init();
 animate();
@@ -19,7 +20,7 @@ function init() {
 	const aspect = window.innerWidth / window.innerHeight;
 
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
-	perspectiveCamera.position.z = 50;
+	perspectiveCamera.position.z = 25;
 
 	// renderer
 
@@ -77,7 +78,7 @@ function init() {
 
 	window.addEventListener( 'resize', onWindowResize );
 
-	createControls( perspectiveCamera );
+	//createControls( perspectiveCamera );
 
 	render();
 
@@ -85,9 +86,11 @@ function init() {
 
 function loadSnowFlakeImage()
 {
-    var texture = new THREE.TextureLoader().load( './assets/images/snowflake/snowflake2.png');
+    var texture = new THREE.TextureLoader().load('./assets/images/snowflake/snowflake2.png');
+	var alphaTexture = new THREE.TextureLoader().load('./assets/images/snowflake/snowflake_alpha.png');
     var geometry = flipY( new THREE.PlaneBufferGeometry() );
-	var material = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, map: texture } );
+	//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
+	var material = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, map: texture, transparent: true, alphaMap: alphaTexture } );
 	
 	var mesh = new THREE.Mesh( geometry, material );
 
@@ -98,12 +101,22 @@ function loadSnowFlakeImage()
         */ 
         //material.needsUpdate = true;
 
-	mesh.position.x = Math.random() * 100 - 50;
-	mesh.position.y = Math.random() * 100 - 50;
+	mesh.position.x = Math.random() * 50 - 25;
+	mesh.position.y = Math.random() * 50 - 25;
 	mesh.position.z = Math.random() * 20 - 10;
 
+	snowflakes.push(mesh);
 	scene.add( mesh );
 
+}
+
+function animateSnowFlake(mesh)
+{
+	mesh.rotation.z += .01;
+	mesh.position.y -= .01;
+
+	if(mesh.position.y < -20)
+		mesh.position.y = 20;
 }
 
 /** Correct UVs to be compatible with `flipY=false` textures. */
@@ -144,15 +157,20 @@ function onWindowResize() {
 
 	renderer.setSize( window.innerWidth, window.innerHeight );
 
-	controls.handleResize();
+	//controls.handleResize();
 
 }
 
 function animate() {
 
-	requestAnimationFrame( animate );
+	for(var i = 0; i < snowflakes.length; i++)
+	{
+		animateSnowFlake(snowflakes[i]);
+	}
 
-	controls.update();
+	requestAnimationFrame( animate );
+	
+	//controls.update();
 
 	render();
 

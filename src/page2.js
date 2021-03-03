@@ -9,6 +9,7 @@ import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
 let perspectiveCamera, controls, scene, renderer, stats;
 let snowFlakeMaterial;
 const frustumSize = 400;
+let snowflakes = new Array();
 
 init();
 animate();
@@ -18,7 +19,7 @@ function init() {
 	const aspect = window.innerWidth / window.innerHeight;
 
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
-	perspectiveCamera.position.z = 0;
+	perspectiveCamera.position.z = 100;
 	// world
 
 	scene = new THREE.Scene();
@@ -119,10 +120,11 @@ function loadSnowFlake()
 		//snowFlakeMaterial.map = diffuseMap;
 		//snowFlakeMaterial.normalMap = loader.load( 'snowflake_tex_normal.png' );
 
-        mesh.position.x = Math.random() * 100 - 50;
-        mesh.position.y = Math.random() * 100 - 50;
-        mesh.position.z = Math.random() * 300 - 350;
+        mesh.position.x = Math.random() * 200 - 100;
+        mesh.position.y = Math.random() * 200 - 100;
+        mesh.position.z = Math.random() * 20 - 20;
 
+		snowflakes.push(mesh);
 		scene.add( gltf.scene );
 
 		//roughnessMipmapper.dispose();		
@@ -130,6 +132,15 @@ function loadSnowFlake()
 
 		} );
 
+}
+
+function animateSnowFlake(mesh)
+{
+	mesh.rotation.z += .01;
+	mesh.position.y -= .1;
+
+	if(mesh.position.y < -100)
+		mesh.position.y = 100;
 }
 
 function createControls( camera ) {
@@ -158,6 +169,12 @@ function onWindowResize() {
 }
 
 function animate() {
+
+	for(var i = 0; i < snowflakes.length; i++)
+	{
+		animateSnowFlake(snowflakes[i]);
+	}
+
 
 	requestAnimationFrame( animate );
 
