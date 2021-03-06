@@ -7,7 +7,9 @@ import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
 //import { RoughnessMipmapper } from './threejs/jsm/utils/RoughnessMipmapper.js';
 
 let perspectiveCamera, controls, scene, renderer, stats;
-let snowFlakeMaterial;
+let cameraDis = 10;
+let totalTime;
+let snowFlake, snowFlakeMaterial;
 const params = {
 	transparent: true,
 	transmission: .5,
@@ -26,7 +28,7 @@ function init() {
 	const aspect = window.innerWidth / window.innerHeight;
 
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
-	perspectiveCamera.position.z = 10;
+	perspectiveCamera.position.z = cameraDis;
 
 	// world
 
@@ -101,7 +103,7 @@ function init() {
 
 	window.addEventListener( 'resize', onWindowResize );
 
-	createControls( perspectiveCamera );
+	//createControls( perspectiveCamera );
 
 }
 
@@ -123,6 +125,7 @@ function loadSnowFlake()
 		snowFlakeMaterial.normalMap = loader.load( 'snowflake_tex_normal.png' );
 
 		scene.add( gltf.scene );
+		snowFlake = mesh;
 
 		//roughnessMipmapper.dispose();
 
@@ -178,7 +181,7 @@ function onWindowResize() {
 
 	renderer.setSize( window.innerWidth, window.innerHeight );
 
-	controls.handleResize();
+	//controls.handleResize();
 
 }
 
@@ -186,7 +189,17 @@ function animate() {
 
 	requestAnimationFrame( animate );
 
-	controls.update();
+	//controls.update();
+	totalTime = Date.now() * .0001;
+	perspectiveCamera.position.set(
+		Math.cos(totalTime) * cameraDis,
+		Math.sin(totalTime) * cameraDis
+	);
+	if(snowFlake)
+	{
+		perspectiveCamera.lookAt(snowFlake.position);
+
+	}
 
 	stats.update();
 
