@@ -99,7 +99,7 @@ function init() {
 	const pmremGenerator = new THREE.PMREMGenerator( renderer );
 	pmremGenerator.compileEquirectangularShader();
 
-	setUpDebugGUI();
+	//setUpDebugGUI();
 
 	window.addEventListener( 'resize', onWindowResize );
 
@@ -201,7 +201,7 @@ function animate() {
 
 	}
 
-	stats.update();
+	//stats.update();
 
 	render();
 
