@@ -1,3 +1,19 @@
+/*
+Example 1:
+Use JQuery to enable HTML buttons to make changes to the behavior of the code
+You can use the Pause button to stop the snowflakes from moving. Resume will make
+them move again.
+
+Example 2:
+Use my understanding of ThreeJS to transition between two states without 
+loading a new page. When the scale of the snowflakes is larger than 8 units,
+the snowflakes disappear and the high quality snowflake model will appear. 
+
+*/
+
+
+
+
 import * as THREE from '../src/threejs/build/three.module.js';
 import { GLTFLoader } from '../src/threejs/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from '../src/threejs/jsm/loaders/RGBELoader.js';
@@ -15,6 +31,7 @@ let environmentMap;
 init();
 animate();
 
+// EXAMPLE 1
 $("#PauseButton").click(function() {
 	canAnimate = false;
 });
@@ -41,10 +58,9 @@ function init() {
 	const pmremGenerator = new THREE.PMREMGenerator( renderer );
 	pmremGenerator.compileEquirectangularShader();
 
-	// world
-
 	scene = new THREE.Scene();
 
+	// load the HDR background
 	new RGBELoader()
 		.setDataType( THREE.UnsignedByteType )
 		.setPath( '../assets/hdr/' )
@@ -63,8 +79,10 @@ function init() {
 
 	});
 
+	// load the snowflake 3D model
 	loadSnowFlakeModel();
 
+	// load all the snowflake images
 	for ( let i = 0; i < 100; i ++ ) {
 
 		loadSnowFlakeImage();
@@ -77,6 +95,7 @@ function init() {
 
 }
 
+// Loads mesh planes with snowflake texture
 function loadSnowFlakeImage()
 {
     var texture = new THREE.TextureLoader().load('../assets/images/snowflake/snowflake2.png');
@@ -95,6 +114,7 @@ function loadSnowFlakeImage()
 
 }
 
+// the the GLTF model of the snowflake and assigns a material
 function loadSnowFlakeModel()
 {
 	let snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
@@ -134,21 +154,25 @@ function loadSnowFlakeModel()
 		} );
 }
 
+// update the position and scale of the snowflake image planes
+// contains EXAMPLE 2
 function animateSnowFlake(mesh)
 {
 	if(isTransitioning)
 	{
-		if(mesh.scale.x > 8)
+		/// EXAMPLE 2
+		if(mesh.scale.x > 8) // then transition to next state
 		{
-			if(canLoad)
+			if(canLoad) 
 			{
-				// move this some where else..
+				// this all should be some where else..
 				snowFlakeModel.visible = true;
 				transitionSetActive(false);
 				canLoad = false;
 			}
 	
 		}
+		
 		mesh.scale.x += .01;
 		mesh.scale.y += .01;
 		mesh.rotation.z += .01;
@@ -166,6 +190,7 @@ function animateSnowFlake(mesh)
 
 }
 
+// set all the snowflake planes to either visible or invisible
 function transitionSetActive(value)
 {
 	isTransitioning = value;
