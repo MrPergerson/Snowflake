@@ -6,8 +6,9 @@ them move again.
 
 Example 2:
 Use my understanding of ThreeJS to transition between two states without 
-loading a new page. When the scale of the snowflakes is larger than 8 units,
-the snowflakes disappear and the high quality snowflake model will appear. 
+loading a new page. When the scale of the snowflakes is larger than 8 
+units (this takes a couple of seconds), the snowflakes disappear and the 
+high quality snowflake model will appear. 
 
 */
 
