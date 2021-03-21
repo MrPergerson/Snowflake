@@ -1,11 +1,15 @@
 import * as THREE from '../src/threejs/build/three.module.js';
-import { TrackballControls } from '../src/threejs/jsm/controls/TrackballControls.js';
+import { GLTFLoader } from '../src/threejs/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from '../src/threejs/jsm/loaders/RGBELoader.js';
 
 let perspectiveCamera, controls, scene, renderer, stats;
 let cameraPosZ = 25;
 let canAnimate = true;
 let snowflakes = new Array();
+let snowFlakeModel;
+let canLoad = true;
+let isTransitioning = true;
+let environmentMap;
 
 
 init();
@@ -46,16 +50,20 @@ function init() {
 		.setPath( '../assets/hdr/' )
 		.load( 'snowy_park_01_blurred_1k.hdr', function ( texture ) {
 
-			const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
+			environmentMap = pmremGenerator.fromEquirectangular( texture ).texture;
 
-			scene.background = envMap;
-			scene.environment = envMap;
+			scene.background = environmentMap;
+			scene.environment = environmentMap;
 
 			texture.dispose();
 			pmremGenerator.dispose();
 
 			render();
+
+
 	});
+
+	loadSnowFlakeModel();
 
 	for ( let i = 0; i < 100; i ++ ) {
 
@@ -87,27 +95,84 @@ function loadSnowFlakeImage()
 
 }
 
+function loadSnowFlakeModel()
+{
+	let snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
+		refractionRatio: 0.98,
+		envMap: environmentMap,
+		transparent: true,
+		transmission: .5,
+		opacity: 1,
+		roughness: 0
+	});
+
+	const loader = new GLTFLoader().setPath( '../assets/models/snowflake/' );
+	loader.load('snowflake_highquality.gltf', function ( gltf ) {
+
+		const loader = new THREE.TextureLoader()
+							.setPath( '../assets/textures/snowflake/' );
+
+
+		var mesh = gltf.scene.children[0];
+		mesh.material = snowFlakeMaterial;
+
+		const diffuseMap = loader.load( 'snowflake_tex_diffuse.jpg' );
+		diffuseMap.encoding = THREE.sRGBEncoding;
+		snowFlakeMaterial.map = diffuseMap;
+		snowFlakeMaterial.normalMap = loader.load( 'snowflake_tex_normal.png' );
+
+		scene.add( gltf.scene );
+		snowFlakeModel = mesh;
+		snowFlakeModel.visible = false;
+
+		//roughnessMipmapper.dispose();
+
+		
+
+		render();
+
+		} );
+}
+
 function animateSnowFlake(mesh)
 {
-	mesh.rotation.z += .01;
-	//mesh.position.y -= .01;
-	//mesh.position.x += .005;
-	mesh.position.z += 4;
-
-	mesh.scale.x += .01;
-	mesh.scale.y += .01;
-
-	if(mesh.scale.x > 8)
+	if(isTransitioning)
 	{
-		mesh.scale.x = 1;
-		mesh.scale.y = 1
-	}
+		if(mesh.scale.x > 8)
+		{
+			if(canLoad)
+			{
+				// move this some where else..
+				snowFlakeModel.visible = true;
+				transitionSetActive(false);
+				canLoad = false;
+			}
+	
+		}
+		mesh.scale.x += .01;
+		mesh.scale.y += .01;
+		mesh.rotation.z += .01;
+		//mesh.position.y -= .01;
+		//mesh.position.x += .005;
+		mesh.position.z += 4;
 
-	if(mesh.position.y < -20)
+		if(mesh.position.y < -20)
 		mesh.position.y = 20;
 
-	if(mesh.position.z > cameraPosZ)
-		mesh.position.z = cameraPosZ - 200;
+		if(mesh.position.z > cameraPosZ)
+			mesh.position.z = cameraPosZ - 200;
+	}
+
+
+}
+
+function transitionSetActive(value)
+{
+	isTransitioning = value;
+	for (var i = 0; i < snowflakes.length; i++)
+	{
+		snowflakes[i].visible = value;
+	}
 }
 
 /** Correct UVs to be compatible with `flipY=false` textures. */
