@@ -1,75 +1,80 @@
-import * as THREE from './threejs/build/three.module.js';
-import Stats from './threejs/jsm/libs/stats.module.js';
-import { GUI } from './threejs/jsm/libs/dat.gui.module.js';
-import { TrackballControls } from './threejs/jsm/controls/TrackballControls.js';
-import { GLTFLoader } from './threejs/jsm/loaders/GLTFLoader.js';
-import { RGBELoader } from './threejs/jsm/loaders/RGBELoader.js';
-//import { RoughnessMipmapper } from './threejs/jsm/utils/RoughnessMipmapper.js';
-import { BasisTextureLoader } from './threejs/jsm/loaders/BasisTextureLoader.js';
+import * as THREE from '../src/threejs/build/three.module.js';
+import { GLTFLoader } from '../src/threejs/jsm/loaders/GLTFLoader.js';
+import { RGBELoader } from '../src/threejs/jsm/loaders/RGBELoader.js';
 
 let perspectiveCamera, controls, scene, renderer, stats;
-let snowFlakeMaterial;
-const frustumSize = 400;
-let snowflakes = new Array();
+let cameraPosZ = 25;
+let canAnimate = true;
+let stage1_snowflakes = new Array();
+let stage2_snowFlakeModel;
+let canLoad = true;
+let loadCount = 0;
+let finishedLoading = false;
+let isTransitioning = false;
+let environmentMap;
+
+let currentState = 1;
+
 
 init();
 animate();
+
+// EXAMPLE 1
+$("#stage1").click(function() {
+	changeStage(1);
+});
+
+$("#stage2").click(function() {
+	changeStage(2);
+});
+
+$("#stage3").click(function() {
+	changeStage(3);
+});
 
 function init() {
 
 	const aspect = window.innerWidth / window.innerHeight;
 
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
-	perspectiveCamera.position.z = 25;
+	perspectiveCamera.position.z = cameraPosZ;
 
 	// renderer
 
 	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	renderer.toneMapping = THREE.ACESFilmicToneMapping;
-	renderer.toneMappingExposure = 1;
 	renderer.outputEncoding = THREE.sRGBEncoding;
 	document.body.appendChild( renderer.domElement );
 
 	const pmremGenerator = new THREE.PMREMGenerator( renderer );
 	pmremGenerator.compileEquirectangularShader();
 
-	// world
-
 	scene = new THREE.Scene();
-	//scene.background = new THREE.Color( 0xcccccc );
 
+	// load the HDR background
 	new RGBELoader()
 		.setDataType( THREE.UnsignedByteType )
-		.setPath( './assets/hdr/' )
+		.setPath( '../assets/hdr/' )
 		.load( 'snowy_park_01_blurred_1k.hdr', function ( texture ) {
 
-			const envMap = pmremGenerator.fromEquirectangular( texture ).texture;
+			environmentMap = pmremGenerator.fromEquirectangular( texture ).texture;
 
-			scene.background = envMap;
-			scene.environment = envMap;
+			scene.background = environmentMap;
+			scene.environment = environmentMap;
 
 			texture.dispose();
 			pmremGenerator.dispose();
 
 			render();
 
-			// use of RoughnessMipmapper is optional
-			//const roughnessMipmapper = new RoughnessMipmapper( renderer );
 
-            /*
-			snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
-				refractionRatio: 0.98,
-				envMap: envMap,
-				transparent: params.transparent,
-				transmission: params.transmission,
-				opacity: params.opacity,
-				roughness: params.roughness
-			});
-            */
 	});
 
+	// load the snowflake 3D model
+	loadSnowFlakeModel();
+
+	// load all the snowflake images
 	for ( let i = 0; i < 100; i ++ ) {
 
 		loadSnowFlakeImage();
@@ -78,45 +83,134 @@ function init() {
 
 	window.addEventListener( 'resize', onWindowResize );
 
-	//createControls( perspectiveCamera );
-
 	render();
 
 }
 
+function changeStage(state)
+{
+	isTransitioning = true;
+
+	switch(state)
+	{
+		case 1:
+			transitionToStage1();
+			currentState = 1;
+			break;
+		case 2:
+			transitionToStage2();
+			currentState = 2;
+			break;
+		case 3:
+			currentState = 3;
+			break;
+		default:
+
+	}
+}
+
+function transitionToStage1()
+{
+	stage2_snowFlakeModel.visible = false;
+	for(var i = 0; i < stage1_snowflakes.length; i++)
+	{
+		setSnowFlakeImagePosition(stage1_snowflakes[i]);
+	}
+}
+
+function transitionToStage2()
+{
+	stage2_snowFlakeModel.position.z = -700;
+	stage2_snowFlakeModel.visible = true;
+	isTransitioning = true;
+}
+
+// Loads mesh planes with snowflake texture
 function loadSnowFlakeImage()
 {
-    var texture = new THREE.TextureLoader().load('./assets/images/snowflake/snowflake2.png');
-	var alphaTexture = new THREE.TextureLoader().load('./assets/images/snowflake/snowflake_alpha.png');
+    var texture = new THREE.TextureLoader().load('../assets/images/snowflake/snowflake2.png');
+	var alphaTexture = new THREE.TextureLoader().load('../assets/images/snowflake/snowflake_alpha.png');
     var geometry = flipY( new THREE.PlaneBufferGeometry() );
-	//var geometry = new THREE.BoxBufferGeometry( 20, 20, 20 );
 	var material = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, map: texture, transparent: true, alphaMap: alphaTexture } );
 	
 	var mesh = new THREE.Mesh( geometry, material );
 
-        /*
-        loader.load('./assets/images/snowflake/snowflake_alpha.png', function (alphamap) {
-            material.alphaMap = alphamap;
-        });
-        */ 
-        //material.needsUpdate = true;
+	setSnowFlakeImagePosition(mesh);
 
+	/*
 	mesh.position.x = Math.random() * 50 - 25;
 	mesh.position.y = Math.random() * 50 - 25;
-	mesh.position.z = Math.random() * 20 - 10;
-
-	snowflakes.push(mesh);
+	mesh.position.z = Math.random() * 200-200;
+	*/
+	stage1_snowflakes.push(mesh);
 	scene.add( mesh );
 
 }
 
-function animateSnowFlake(mesh)
+function setSnowFlakeImagePosition(mesh)
 {
+	mesh.position.x = Math.random() * 50 - 25;
+	mesh.position.y = Math.random() * 50 - 25;
+	mesh.position.z = Math.random() * 20 - 10;
+	mesh.scale.x = 1;
+	mesh.scale.y = 1;
+}
+
+// the the GLTF model of the snowflake and assigns a material
+function loadSnowFlakeModel()
+{
+	const loader = new GLTFLoader().setPath( '../assets/models/snowflake/' );
+	loader.load('snowflake.gltf', function (gltf) {
+		let snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
+			refractionRatio: 0.98,
+			envMap: environmentMap,
+			transparent: true,
+			transmission: .5,
+			opacity: 1,
+			roughness: 0
+		});
+
+		const loader = new THREE.TextureLoader()
+		.setPath( '../assets/textures/snowflake/' );
+
+		var mesh = gltf.scene.children[0];
+		mesh.material = snowFlakeMaterial;
+
+		const diffuseMap = loader.load( 'snowflake_tex_diffuse.jpg' );
+		diffuseMap.encoding = THREE.sRGBEncoding;
+		snowFlakeMaterial.map = diffuseMap;
+		snowFlakeMaterial.normalMap = loader.load( 'snowflake_tex_normal.png' );
+
+		scene.add( gltf.scene );
+		stage2_snowFlakeModel = mesh;
+
+		// can this be removed? Maybe have a loading screen
+		stage2_snowFlakeModel.visible = false;
+
+		render();
+	});
+
+}
+
+// update the position and scale of the snowflake image planes
+// contains EXAMPLE 2
+function animateSnowFlake(mesh)
+{		
 	mesh.rotation.z += .01;
 	mesh.position.y -= .01;
 
 	if(mesh.position.y < -20)
 		mesh.position.y = 20;
+}
+
+// set all the snowflake planes to either visible or invisible
+function transitionSetActive(value)
+{
+	isTransitioning = value;
+	for (var i = 0; i < stage1_snowflakes.length; i++)
+	{
+		stage1_snowflakes[i].visible = value;
+	}
 }
 
 /** Correct UVs to be compatible with `flipY=false` textures. */
@@ -131,19 +225,6 @@ function flipY( geometry ) {
     }
 
     return geometry;
-
-}
-
-
-function createControls( camera ) {
-
-	controls = new TrackballControls( camera, renderer.domElement );
-
-	controls.rotateSpeed = 1.0;
-	controls.zoomSpeed = 1.2;
-	controls.panSpeed = 0.8;
-
-	controls.keys = [ 65, 83, 68 ];
 
 }
 
@@ -163,15 +244,71 @@ function onWindowResize() {
 
 function animate() {
 
-	for(var i = 0; i < snowflakes.length; i++)
+
+	switch(currentState)
 	{
-		animateSnowFlake(snowflakes[i]);
+		case 1:
+			if(isTransitioning)
+			{
+				// How can I reverse the transition?
+				// Can I group the snowflakes into an parent object?
+				perspectiveCamera.zoom -= .01;
+				
+				if(perspectiveCamera.zoom <= 1)
+				{
+					isTransitioning = false;
+					perspectiveCamera.zoom = 1;
+				}
+				perspectiveCamera.updateProjectionMatrix();
+			}
+
+			for(var i = 0; i < stage1_snowflakes.length; i++)
+			{
+				animateSnowFlake(stage1_snowflakes[i]);
+			}
+			break;
+		case 2:
+			if(stage2_snowFlakeModel.position.z < 2)
+			{
+				stage2_snowFlakeModel.position.z += 4;
+				perspectiveCamera.zoom += .01;
+				perspectiveCamera.updateProjectionMatrix();
+
+			}
+			else
+			{
+				isTransitioning = false;			
+			}
+
+			stage2_snowFlakeModel.rotation.x += .01;
+			stage2_snowFlakeModel.rotation.z += .001;
+
+			if(isTransitioning)
+			{
+				for(var i = 0; i < stage1_snowflakes.length; i++)
+				{
+					var mesh = stage1_snowflakes[i];
+					
+					mesh.scale.x += .01;
+					mesh.scale.y += .01;
+					mesh.rotation.z += .01;
+					mesh.position.z += .5;
+					
+					//if(mesh.position.z > cameraPosZ)
+						//mesh.position.z = cameraPosZ - 200;
+				}
+			}
+
+			break;
+		case 3:
+
+			break;
 	}
+
+
 
 	requestAnimationFrame( animate );
 	
-	//controls.update();
-
 	render();
 
 }

@@ -148,7 +148,7 @@ function loadSnowFlakeModel()
 
 		//roughnessMipmapper.dispose();
 
-		
+		snowFlakeModel.position.z = -1000;
 
 		render();
 
@@ -162,8 +162,9 @@ function animateSnowFlake(mesh)
 	if(isTransitioning)
 	{
 		/// EXAMPLE 2
-		if(mesh.scale.x > 8) // then transition to next state
+		if(mesh.scale.x > 2) // then transition to next state
 		{
+			
 			if(canLoad) 
 			{
 				// this all should be some where else..
@@ -233,14 +234,17 @@ function onWindowResize() {
 function animate() {
 
 	if(canAnimate)
-	{
-
-		
+	{	
 		for(var i = 0; i < snowflakes.length; i++)
 		{
 			animateSnowFlake(snowflakes[i]);
 		}
 		
+	}
+
+	if(isTransitioning == false && snowFlakeModel.position.z < 0)
+	{
+		snowFlakeModel.position.z += 4;
 	}
 		requestAnimationFrame( animate );
 		
