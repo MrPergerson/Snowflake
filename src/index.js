@@ -7,6 +7,7 @@ let cameraPosZ = 25;
 let canAnimate = true;
 let stage1_snowflakes = new Array();
 let stage2_snowFlakeModel;
+let stage3_snowgroundModel;
 let canLoad = true;
 let loadCount = 0;
 let finishedLoading = false;
@@ -74,6 +75,9 @@ function init() {
 	// load the snowflake 3D model
 	loadSnowFlakeModel();
 
+	// load snowflake ground
+	loadSnowGroundModel();
+
 	// load all the snowflake images
 	for ( let i = 0; i < 100; i ++ ) {
 
@@ -102,6 +106,7 @@ function changeStage(state)
 			currentState = 2;
 			break;
 		case 3:
+			transitionToStage3();
 			currentState = 3;
 			break;
 		default:
@@ -112,6 +117,7 @@ function changeStage(state)
 function transitionToStage1()
 {
 	stage2_snowFlakeModel.visible = false;
+	stage3_snowgroundModel.visible = false;
 	for(var i = 0; i < stage1_snowflakes.length; i++)
 	{
 		setSnowFlakeImagePosition(stage1_snowflakes[i]);
@@ -120,9 +126,20 @@ function transitionToStage1()
 
 function transitionToStage2()
 {
+	stage3_snowgroundModel.visible = false;
 	stage2_snowFlakeModel.position.z = -700;
 	stage2_snowFlakeModel.visible = true;
 	isTransitioning = true;
+}
+
+function transitionToStage3()
+{
+	for(var i = 0; i < stage1_snowflakes.length; i++)
+	{
+		setSnowFlakeImagePosition(stage1_snowflakes[i]);
+	}
+	stage2_snowFlakeModel.visible = false;
+	stage3_snowgroundModel.visible = true;
 }
 
 // Loads mesh planes with snowflake texture
@@ -190,6 +207,47 @@ function loadSnowFlakeModel()
 		render();
 	});
 
+}
+
+function loadSnowGroundModel()
+{
+	const loader = new GLTFLoader().setPath( '../assets/models/snowground/' );
+	loader.load('snowground.gltf', function (gltf) {
+		/*
+		let snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
+			refractionRatio: 0.98,
+			envMap: environmentMap,
+			transparent: true,
+			transmission: .5,
+			opacity: 1,
+			roughness: 0
+		});
+		*/
+		const loader = new THREE.TextureLoader()
+		.setPath( '../assets/models/snowground/' );
+
+		var mesh = gltf.scene.children[0];
+		mesh.scale.x = 50;
+		mesh.scale.y = 50;
+		mesh.scale.z = 50;
+		mesh.position.y = -6;
+		mesh.position.z = 10;
+		//mesh.material = snowFlakeMaterial;
+
+		/*
+		const diffuseMap = loader.load( 'snowflake_tex_diffuse.jpg' );
+		diffuseMap.encoding = THREE.sRGBEncoding;
+		snowFlakeMaterial.map = diffuseMap;
+		snowFlakeMaterial.normalMap = loader.load( 'snowflake_tex_normal.png' );
+		*/
+		scene.add( gltf.scene );
+		stage3_snowgroundModel = mesh;
+
+		// can this be removed? Maybe have a loading screen
+		stage3_snowgroundModel.visible = false;
+
+		render();
+	});
 }
 
 // update the position and scale of the snowflake image planes
@@ -301,7 +359,8 @@ function animate() {
 
 			break;
 		case 3:
-
+			perspectiveCamera.zoom = 1;
+			perspectiveCamera.updateProjectionMatrix();
 			break;
 	}
 
