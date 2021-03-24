@@ -29,13 +29,13 @@ body
     bottom: 5%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: deepskyblue;
+    background-color: rgb(139, 226, 255);
     padding: 20px;
     border-radius: 6px;
 }
 
 button {
-    background-color: dodgerblue;
+    background-color: rgb(111, 183, 255);
     color: white;
     padding: 1vw 4vh;
     border: 2px solid #83bdff;
