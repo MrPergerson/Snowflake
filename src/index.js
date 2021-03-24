@@ -176,7 +176,7 @@ function setSnowFlakeImagePosition(mesh)
 // the the GLTF model of the snowflake and assigns a material
 function loadSnowFlakeModel()
 {
-	const loader = new GLTFLoader().setPath( '../assets/models/snowflake/' );
+	const loader = new GLTFLoader().setPath( './assets/models/snowflake/' );
 	loader.load('snowflake.gltf', function (gltf) {
 		let snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
 			refractionRatio: 0.98,
@@ -188,7 +188,7 @@ function loadSnowFlakeModel()
 		});
 
 		const loader = new THREE.TextureLoader()
-		.setPath( '../assets/textures/snowflake/' );
+		.setPath( './assets/textures/snowflake/' );
 
 		var mesh = gltf.scene.children[0];
 		mesh.material = snowFlakeMaterial;
@@ -211,7 +211,7 @@ function loadSnowFlakeModel()
 
 function loadSnowGroundModel()
 {
-	const loader = new GLTFLoader().setPath( '../assets/models/snowground/' );
+	const loader = new GLTFLoader().setPath( './assets/models/snowground/' );
 	loader.load('snowground.gltf', function (gltf) {
 		/*
 		let snowFlakeMaterial = new THREE.MeshPhysicalMaterial({
