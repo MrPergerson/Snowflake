@@ -122,13 +122,17 @@ function transitionToStage1()
 	{
 		setSnowFlakeImagePosition(stage1_snowflakes[i]);
 	}
+	perspectiveCamera.position.y = 0;
 }
 
 function transitionToStage2()
 {
 	stage3_snowgroundModel.visible = false;
-	stage2_snowFlakeModel.position.z = -700;
+	stage2_snowFlakeModel.position.copy(new THREE.Vector3(0,0,-700));
+	stage2_snowFlakeModel.scale.copy(new THREE.Vector3(.4,.4,.4));
+	//stage2_snowFlakeModel.rotation.copy(new THREE.Vector3(0,0,0));
 	stage2_snowFlakeModel.visible = true;
+	perspectiveCamera.position.y = 0;
 	isTransitioning = true;
 }
 
@@ -138,8 +142,11 @@ function transitionToStage3()
 	{
 		setSnowFlakeImagePosition(stage1_snowflakes[i]);
 	}
-	stage2_snowFlakeModel.visible = false;
+	stage2_snowFlakeModel.visible = true;
+	stage2_snowFlakeModel.position.copy(new THREE.Vector3(0,8,12));
+	stage2_snowFlakeModel.scale.copy(new THREE.Vector3(.1,.1,.1));
 	stage3_snowgroundModel.visible = true;
+	perspectiveCamera.position.y = 0;
 }
 
 // Loads mesh planes with snowflake texture
@@ -230,7 +237,7 @@ function loadSnowGroundModel()
 		mesh.scale.x = 50;
 		mesh.scale.y = 50;
 		mesh.scale.z = 50;
-		mesh.position.y = -6;
+		mesh.position.y = -16;
 		mesh.position.z = 10;
 		//mesh.material = snowFlakeMaterial;
 
@@ -269,6 +276,49 @@ function transitionSetActive(value)
 	{
 		stage1_snowflakes[i].visible = value;
 	}
+}
+
+function camreaZoomIn(targetZoom, rate)
+{
+	if(perspectiveCamera.zoom >= targetZoom)
+	{
+		perspectiveCamera.zoom = 1;
+		perspectiveCamera.updateProjectionMatrix();
+		return true;
+	} else
+	{
+		perspectiveCamera.zoom += rate;
+		perspectiveCamera.updateProjectionMatrix();
+		return false;
+	}
+
+	
+}
+
+function cameraZoomOut(rate = -1)
+{
+
+	if(rate <= 0)
+	{
+		perspectiveCamera.zoom = 1;
+		perspectiveCamera.updateProjectionMatrix();
+		return true;
+	}
+
+	if(perspectiveCamera.zoom <= 1)
+	{
+		perspectiveCamera.zoom = 1;
+		perspectiveCamera.updateProjectionMatrix();
+		return true;
+	} 
+	else
+	{
+		perspectiveCamera.zoom -= rate;
+		perspectiveCamera.updateProjectionMatrix();
+		return false;
+	}
+		
+	
 }
 
 /** Correct UVs to be compatible with `flipY=false` textures. */
@@ -310,14 +360,9 @@ function animate() {
 			{
 				// How can I reverse the transition?
 				// Can I group the snowflakes into an parent object?
-				perspectiveCamera.zoom -= .01;
-				
-				if(perspectiveCamera.zoom <= 1)
-				{
-					isTransitioning = false;
-					perspectiveCamera.zoom = 1;
-				}
-				perspectiveCamera.updateProjectionMatrix();
+				var hasFinishedZooming = cameraZoomOut(.01);
+				if(hasFinishedZooming) isTransitioning = false;
+
 			}
 
 			for(var i = 0; i < stage1_snowflakes.length; i++)
@@ -329,8 +374,7 @@ function animate() {
 			if(stage2_snowFlakeModel.position.z < 2)
 			{
 				stage2_snowFlakeModel.position.z += 4;
-				perspectiveCamera.zoom += .01;
-				perspectiveCamera.updateProjectionMatrix();
+				camreaZoomIn(4,.01);
 
 			}
 			else
@@ -359,8 +403,23 @@ function animate() {
 
 			break;
 		case 3:
-			perspectiveCamera.zoom = 1;
-			perspectiveCamera.updateProjectionMatrix();
+			cameraZoomOut(-1);
+
+			if(perspectiveCamera.position.y > -10)
+			{
+				perspectiveCamera.position.y -= .1; 
+			}
+
+			if(stage2_snowFlakeModel.position.y > -10)
+			{
+				stage2_snowFlakeModel.position.y -= .05;
+			}
+
+			for(var i = 0; i < stage1_snowflakes.length; i++)
+			{
+				animateSnowFlake(stage1_snowflakes[i]);
+			}
+
 			break;
 	}
 
