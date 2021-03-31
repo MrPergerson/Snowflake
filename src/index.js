@@ -3,10 +3,16 @@ import { GLTFLoader } from '../src/threejs/jsm/loaders/GLTFLoader.js';
 import { RGBELoader } from '../src/threejs/jsm/loaders/RGBELoader.js';
 
 let perspectiveCamera, controls, scene, renderer, stats;
+let clock = new THREE.Clock();
 let cameraPosZ = 25;
+let cameraTargetZoom = 1;
+let currentCameraPos, targetCameraPos, targetCameraRot;
 let canAnimate = true;
 let stage1_snowflakes = new Array();
+let stage1_snowflakeGroup = new THREE.Group();
+let stage1_snowflake_targetPos;
 let stage2_snowFlakeModel;
+let stage2_snowFlake_targetPos, stage2_snowFlake_targetScale;
 let stage3_snowgroundModel;
 let canLoad = true;
 let loadCount = 0;
@@ -38,7 +44,9 @@ function init() {
 	const aspect = window.innerWidth / window.innerHeight;
 
 	perspectiveCamera = new THREE.PerspectiveCamera( 60, aspect, 1, 1000 );
-	perspectiveCamera.position.z = cameraPosZ;
+	targetCameraPos = new THREE.Vector3(0,0,25);
+	//cameraTargetZoom = 1;
+	perspectiveCamera.position.copy(targetCameraPos);
 
 	// renderer
 
@@ -72,18 +80,20 @@ function init() {
 
 	});
 
+	stage2_snowFlake_targetPos = new THREE.Vector3(0,0,-700);
+	stage2_snowFlake_targetScale = new THREE.Vector3(.4,.4,.4);
 	// load the snowflake 3D model
 	loadSnowFlakeModel();
 
 	// load snowflake ground
 	loadSnowGroundModel();
 
+	stage1_snowflake_targetPos = new THREE.Vector3(0,0,0);
+	stage1_snowflakeGroup.position.copy(stage1_snowflake_targetPos);
 	// load all the snowflake images
-	for ( let i = 0; i < 100; i ++ ) {
+	loadSnowFlakeImage(100);
 
-		loadSnowFlakeImage();
-
-	}		
+	
 
 	window.addEventListener( 'resize', onWindowResize );
 
@@ -116,58 +126,76 @@ function changeStage(state)
 
 function transitionToStage1()
 {
-	stage2_snowFlakeModel.visible = false;
-	stage3_snowgroundModel.visible = false;
+	//stage2_snowFlakeModel.visible = false;
+	//stage3_snowgroundModel.visible = false;
+	/*
 	for(var i = 0; i < stage1_snowflakes.length; i++)
 	{
 		setSnowFlakeImagePosition(stage1_snowflakes[i]);
 	}
-	perspectiveCamera.position.y = 0;
+	*/
+	stage1_snowflake_targetPos = new THREE.Vector3(0,0,0);
+	stage2_snowFlake_targetPos = new THREE.Vector3(0,0,-700);
+	stage2_snowFlake_targetScale = new THREE.Vector3(.4,.4,.4);
+	targetCameraPos = new THREE.Vector3(0,0,25);
+	cameraTargetZoom = 1;
 }
 
 function transitionToStage2()
 {
-	stage3_snowgroundModel.visible = false;
+	//stage3_snowgroundModel.visible = false;
+	stage1_snowflake_targetPos = new THREE.Vector3(0,0,30);
 	stage2_snowFlakeModel.position.copy(new THREE.Vector3(0,0,-700));
 	stage2_snowFlakeModel.scale.copy(new THREE.Vector3(.4,.4,.4));
 	//stage2_snowFlakeModel.rotation.copy(new THREE.Vector3(0,0,0));
 	stage2_snowFlakeModel.visible = true;
-	perspectiveCamera.position.y = 0;
+	//perspectiveCamera.position.y = 0;
+	targetCameraPos = new THREE.Vector3(0,0,25);
 	isTransitioning = true;
+	cameraTargetZoom = 2;
 }
 
 function transitionToStage3()
 {
+	stage1_snowflake_targetPos = new THREE.Vector3(0,0,0);
+	/*
 	for(var i = 0; i < stage1_snowflakes.length; i++)
 	{
 		setSnowFlakeImagePosition(stage1_snowflakes[i]);
 	}
+	*/
 	stage2_snowFlakeModel.visible = true;
-	stage2_snowFlakeModel.position.copy(new THREE.Vector3(0,8,12));
+	stage2_snowFlakeModel.position.copy(new THREE.Vector3(0,-10,12));
 	stage2_snowFlakeModel.scale.copy(new THREE.Vector3(.1,.1,.1));
-	stage3_snowgroundModel.visible = true;
-	perspectiveCamera.position.y = 0;
+	//stage3_snowgroundModel.visible = true;
+	//perspectiveCamera.position.y = 0;
+
+	
+	targetCameraPos = new THREE.Vector3(0,-40,25);
+	cameraTargetZoom = 1;
+
+
 }
 
 // Loads mesh planes with snowflake texture
-function loadSnowFlakeImage()
+function loadSnowFlakeImage(amount)
 {
     var texture = new THREE.TextureLoader().load('../assets/images/snowflake/snowflake2.png');
 	var alphaTexture = new THREE.TextureLoader().load('../assets/images/snowflake/snowflake_alpha.png');
     var geometry = flipY( new THREE.PlaneBufferGeometry() );
 	var material = new THREE.MeshBasicMaterial( { side: THREE.DoubleSide, map: texture, transparent: true, alphaMap: alphaTexture } );
 	
-	var mesh = new THREE.Mesh( geometry, material );
-
-	setSnowFlakeImagePosition(mesh);
-
-	/*
-	mesh.position.x = Math.random() * 50 - 25;
-	mesh.position.y = Math.random() * 50 - 25;
-	mesh.position.z = Math.random() * 200-200;
-	*/
-	stage1_snowflakes.push(mesh);
-	scene.add( mesh );
+	for ( let i = 0; i < amount; i ++ ) 
+	{
+		var mesh = new THREE.Mesh( geometry, material );
+		setSnowFlakeImagePosition(mesh);
+		stage1_snowflakes.push(mesh);
+		stage1_snowflakeGroup.add(mesh);
+		
+	}
+	
+	scene.add( stage1_snowflakeGroup );
+	loadCount++;
 
 }
 
@@ -212,6 +240,8 @@ function loadSnowFlakeModel()
 		stage2_snowFlakeModel.visible = false;
 
 		render();
+
+		loadCount++;
 	});
 
 }
@@ -237,7 +267,7 @@ function loadSnowGroundModel()
 		mesh.scale.x = 50;
 		mesh.scale.y = 50;
 		mesh.scale.z = 50;
-		mesh.position.y = -16;
+		mesh.position.y = -46;
 		mesh.position.z = 10;
 		//mesh.material = snowFlakeMaterial;
 
@@ -251,74 +281,26 @@ function loadSnowGroundModel()
 		stage3_snowgroundModel = mesh;
 
 		// can this be removed? Maybe have a loading screen
-		stage3_snowgroundModel.visible = false;
+		//stage3_snowgroundModel.visible = false;
 
 		render();
+
+		loadCount++;
 	});
 }
 
 // update the position and scale of the snowflake image planes
-// contains EXAMPLE 2
-function animateSnowFlake(mesh)
+function animateSnowFlake()
 {		
-	mesh.rotation.z += .01;
-	mesh.position.y -= .01;
-
-	if(mesh.position.y < -20)
-		mesh.position.y = 20;
-}
-
-// set all the snowflake planes to either visible or invisible
-function transitionSetActive(value)
-{
-	isTransitioning = value;
-	for (var i = 0; i < stage1_snowflakes.length; i++)
+	for(var i = 0; i < stage1_snowflakes.length; i++)
 	{
-		stage1_snowflakes[i].visible = value;
+		var mesh = stage1_snowflakes[i];
+		mesh.rotation.z += .01;
+		mesh.position.y -= .01;
+
+		if(mesh.position.y < -20)
+			mesh.position.y = 20;
 	}
-}
-
-function camreaZoomIn(targetZoom, rate)
-{
-	if(perspectiveCamera.zoom >= targetZoom)
-	{
-		perspectiveCamera.zoom = 1;
-		perspectiveCamera.updateProjectionMatrix();
-		return true;
-	} else
-	{
-		perspectiveCamera.zoom += rate;
-		perspectiveCamera.updateProjectionMatrix();
-		return false;
-	}
-
-	
-}
-
-function cameraZoomOut(rate = -1)
-{
-
-	if(rate <= 0)
-	{
-		perspectiveCamera.zoom = 1;
-		perspectiveCamera.updateProjectionMatrix();
-		return true;
-	}
-
-	if(perspectiveCamera.zoom <= 1)
-	{
-		perspectiveCamera.zoom = 1;
-		perspectiveCamera.updateProjectionMatrix();
-		return true;
-	} 
-	else
-	{
-		perspectiveCamera.zoom -= rate;
-		perspectiveCamera.updateProjectionMatrix();
-		return false;
-	}
-		
-	
 }
 
 /** Correct UVs to be compatible with `flipY=false` textures. */
@@ -352,89 +334,83 @@ function onWindowResize() {
 
 function animate() {
 
-
-	switch(currentState)
-	{
-		case 1:
-			if(isTransitioning)
-			{
-				// How can I reverse the transition?
-				// Can I group the snowflakes into an parent object?
-				var hasFinishedZooming = cameraZoomOut(.01);
-				if(hasFinishedZooming) isTransitioning = false;
-
-			}
-
-			for(var i = 0; i < stage1_snowflakes.length; i++)
-			{
-				animateSnowFlake(stage1_snowflakes[i]);
-			}
-			break;
-		case 2:
-			if(stage2_snowFlakeModel.position.z < 2)
-			{
-				stage2_snowFlakeModel.position.z += 4;
-				camreaZoomIn(4,.01);
-
-			}
-			else
-			{
-				isTransitioning = false;			
-			}
-
-			stage2_snowFlakeModel.rotation.x += .01;
-			stage2_snowFlakeModel.rotation.z += .001;
-
-			if(isTransitioning)
-			{
-				for(var i = 0; i < stage1_snowflakes.length; i++)
+	if(loadCount == 3)
+	{	
+		let stage1_snowflake_currentPos = stage1_snowflakeGroup.position;
+		switch(currentState)
+		{
+			case 1:
+				var newZPos = THREE.MathUtils.lerp(stage1_snowflake_currentPos.z, stage1_snowflake_targetPos.z, .05);
+				stage1_snowflakeGroup.position.copy(new THREE.Vector3(0,0,newZPos)); 		
+				
+				stage2_snowFlakeModel.position.lerp(stage2_snowFlake_targetPos, .05);
+				stage2_snowFlakeModel.scale.lerp(stage2_snowFlake_targetScale,.05);
+				
+				break;
+			case 2:
+				var newZPos = THREE.MathUtils.lerp(stage1_snowflake_currentPos.z, stage1_snowflake_targetPos.z, .05);
+				stage1_snowflakeGroup.position.copy(new THREE.Vector3(0,0,newZPos)); 
+				
+				if(stage2_snowFlakeModel.position.z < 2)
 				{
-					var mesh = stage1_snowflakes[i];
+					stage2_snowFlakeModel.position.z += 4;
+					//camreaZoomIn(4,.01);
 					
-					mesh.scale.x += .01;
-					mesh.scale.y += .01;
-					mesh.rotation.z += .01;
-					mesh.position.z += .5;
-					
-					//if(mesh.position.z > cameraPosZ)
-						//mesh.position.z = cameraPosZ - 200;
 				}
-			}
-
+				else
+				{
+					isTransitioning = false;			
+				}
+				
+				stage2_snowFlakeModel.rotation.x += .01;
+				stage2_snowFlakeModel.rotation.z += .001;
+				
+				if(isTransitioning)
+				{
+					for(var i = 0; i < stage1_snowflakes.length; i++)
+					{
+						var mesh = stage1_snowflakes[i];
+						
+						//mesh.scale.x += .01;
+						//mesh.scale.y += .01;
+						mesh.rotation.z += .01;
+						//mesh.position.z += .5;
+						
+						//if(mesh.position.z > cameraPosZ)
+						//mesh.position.z = cameraPosZ - 200;
+					}
+				}
+			
 			break;
-		case 3:
-			cameraZoomOut(-1);
-
-			if(perspectiveCamera.position.y > -10)
-			{
-				perspectiveCamera.position.y -= .1; 
-			}
-
-			if(stage2_snowFlakeModel.position.y > -10)
-			{
-				stage2_snowFlakeModel.position.y -= .05;
-			}
-
-			for(var i = 0; i < stage1_snowflakes.length; i++)
-			{
-				animateSnowFlake(stage1_snowflakes[i]);
-			}
-
-			break;
+			case 3:
+				//cameraZoomOut(-1);
+				
+				if(stage2_snowFlakeModel.position.y > -40)
+				{
+					stage2_snowFlakeModel.position.y -= .05;
+				}
+				
+				break;
+		}
+				
+		animateSnowFlake();
+		
+		perspectiveCamera.zoom = THREE.MathUtils.lerp(perspectiveCamera.zoom,cameraTargetZoom,.01);
+		perspectiveCamera.position.lerp(targetCameraPos, .01);
+		perspectiveCamera.updateProjectionMatrix();
+	
 	}
-
-
-
+			
 	requestAnimationFrame( animate );
 	
 	render();
-
+			
 }
 
 function render() {
-
+	
 	const camera = perspectiveCamera;
-
+	
 	renderer.render( scene, camera );
-
+	
 }
