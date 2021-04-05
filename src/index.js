@@ -108,14 +108,17 @@ function changeStage(state)
 	switch(state)
 	{
 		case 1:
+			if(currentState == 1) break;
 			transitionToStage1();
 			currentState = 1;
 			break;
 		case 2:
+			if(currentState == 2) break;
 			transitionToStage2();
 			currentState = 2;
 			break;
 		case 3:
+			if(currentState == 3) break;
 			transitionToStage3();
 			currentState = 3;
 			break;
@@ -345,6 +348,11 @@ function animate() {
 				
 				stage2_snowFlakeModel.position.lerp(stage2_snowFlake_targetPos, .05);
 				stage2_snowFlakeModel.scale.lerp(stage2_snowFlake_targetScale,.05);
+
+				if(Math.abs(stage2_snowFlake_targetPos.z - stage2_snowFlakeModel.position.z) < 1)
+				{
+					stage2_snowFlakeModel.visible = false;
+				}
 				
 				break;
 			case 2:
